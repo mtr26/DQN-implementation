@@ -11,6 +11,9 @@ class ReplayMemory:
         self.memory = deque([], capacity)
 
     def add(self, state, action, next_state, reward, done):
+        """
+        This function is used to store the state, action, next_state, reward and done in the memory buffer.
+        """
         self.memory.append({'state' : th.tensor(state),
                      'action' : th.tensor(action),
                      'next_state' : th.tensor(next_state),
@@ -18,6 +21,9 @@ class ReplayMemory:
                      'done' : th.tensor(done)})
         
     def sample(self, batch_size):
+        """
+        This function is used to sample the memory buffer.
+        """
         return random.sample(self.memory, batch_size)
     
     def __len__(self):
@@ -25,20 +31,36 @@ class ReplayMemory:
 
 
 class DQN:
+    """
+    This class is used to implement the Deep Q Network.
+    stqte_dim : int : The dimension of the state space.
+    action_dim : int : The dimension of the action space.
+    hidden_size : int : The size of the hidden layer.
+    batch_size : int : The size of the batch.
+    target_update_freq : int : The frequency at which the target network is updated.
+    model : str : The model to use. Default is "1".
+    train_freq : int : The frequency at which the model is trained. Default is 4.
+    ram_cap : int : The capacity of the memory buffer. Default is 1e6.
+    gamma : float : The discount factor. Default is 0.99.
+    esp_start : float : The starting epsilon value. Default is 1.0.
+    eps_end : float : The ending epsilon value. Default is 0.01.
+    eps_decay : float : The decay rate of epsilon. Default is 0.999.
+    lr : float : The learning rate. Default is 1e-4.
+    """
     def __init__(self,
-                state_dim,
-                action_dim,
-                hidden_size,
-                batch_size,
-                target_update_freq,
-                model="1",
-                train_freq = 4,
-                ram_cap = int(1e6),
-                gamma = 0.99,
-                esp_start = 1, 
-                eps_end = 0.01, 
-                eps_decay = 0.999, 
-                lr = 1e-4):
+                state_dim : int,
+                action_dim : int,
+                hidden_size : int,
+                batch_size : int,
+                target_update_freq : int,
+                model : str = "1",
+                train_freq : int = 4,
+                ram_cap : int = int(1e6),
+                gamma : float = 0.99,
+                esp_start : float = 1.0, 
+                eps_end : float = 0.01, 
+                eps_decay : float = 0.999, 
+                lr : float = 1e-4):
         self.policy_net = Model(state_dim, hidden_size, action_dim) if model == "1" else CNNModel(state_dim, action_dim)
         self.target_net = Model(state_dim, hidden_size, action_dim) if model == "1" else CNNModel(state_dim, action_dim)
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -59,23 +81,38 @@ class DQN:
         self.lr = lr
 
     def predict(self, state):
+        """
+        This function is used to predict the action to take given the state.
+        """
         if np.random.random() > self.eps:
             return th.argmax(self.policy_net(th.tensor(state))).item()
         else:
             return np.random.randint(0, self.action_dim)
         
     def target_update(self):
+        """
+        This function is used to update the target network.
+        """
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
     def epsilon_update(self):
+        """
+        This function is used to update the epsilon value.
+        """
         if self.eps > self.eps_end:
             self.eps = max(self.eps_end, self.eps * self.eps_decay)
 
         
     def push(self, state, action, next_state, reward, done):
+        """
+        This function is used to store the state, action, next_state, reward and done in the memory buffer.
+        """
         self.memory.add(state, action, next_state, reward, done)
         
     def backward(self):
+        """
+        This function is used to train the model
+        """
         if len(self.memory) < self.batch_size:
             return  
 
